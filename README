@@ -1,2 +1,4 @@
-first,read execl
-user add on the windows
+lnmp:install
+import_excel.py:import excel file to mysql
+init7:first run when install system
+useradd-cmd.py:make cmd,user add on the windows
