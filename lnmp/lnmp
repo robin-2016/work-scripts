@@ -1,0 +1,115 @@
+#!/bin/bash
+#一键安装Nginx、MySQL和PHP
+
+#nginx部分:压缩包必须已经下载在/usr/local/src/目录下
+
+Install=/usr/local/nginx
+src=/usr/local/src
+
+echo "正在安装编译工具……"
+yum -y install gcc gcc-c++ automake autoconf libtool > /dev/null 2>&1
+echo "正在安装依赖环境……"
+yum -y install pcre-devel openssl-devel > /dev/null 2>&1
+cd $src/
+tar xf nginx*.tar.gz ||exit
+cd nginx* ||exit
+echo "正在编译……"
+./configure --prefix=$Install --with-http_ssl_module --with-pcre 
+if [ $? ]
+then 
+	echo "编译成功！"
+	make && make install > /dev/null 2>&1
+else echo "编译失败。"
+fi
+echo "正在复制启动脚本……"
+cp $src/nginxstart /etc/init.d/nginx ||exit
+chmod a+x /etc/init.d/nginx
+chkconfig --add nginx ||exit
+chkconfig nginx on ||exit
+echo "正在启动Nginx……"
+service nginx start
+#echo "正在开放防火墙端口……"
+#firewall-cmd --permanent --add-port=80/tcp > /dev/null 2>&1 ||exit
+#firewall-cmd --reload > /dev/null 2>&1 ||exit
+echo "Nginx安装完成！"
+
+#PHP部分
+echo "正在安装PHP……"
+
+PHP=/usr/local/php
+echo "正在安装依赖包……"
+yum -y install libjpeg libjpeg-devel libpng libpng-devel freetype freetype-devel libxml2 libxml2-devel zlib zlib-devel glibc glibc-devel glib2 glib2-devel bzip2 bzip2-devel ncurses curl openssl-devel gdbm-devel db4-devel libXpm-devel libX11-devel gd-devel gmp-devel readline-devel libxslt-devel expat-devel xmlrpc-c xmlrpc-c-devel > /dev/null 2>&1
+
+cd $src/
+tar xf libmcrypt*.tar.gz ||exit
+cd libmcrypt*
+./configure
+make && make install
+echo "开始解压PHP包……"
+cd $src/
+tar xf php*.tar.bz2 ||exit
+cd php* ||exit
+
+./configure --prefix=$PHP --with-mysql --with-mysql-sock --with-mysqli --enable-fpm --enable-soap --with-libxml-dir --with-openssl --with-mcrypt --with-mhash --with-pcre-regex --with-sqlite3 --with-zlib --enable-bcmath --with-iconv --with-bz2 --enable-calendar --with-curl --with-cdb --enable-dom --enable-fileinfo --enable-filter --with-pcre-dir --enable-ftp --with-gd --with-openssl-dir --with-jpeg-dir --with-png-dir --with-zlib-dir  --with-freetype-dir --enable-gd-native-ttf --enable-gd-jis-conv --with-gettext --with-gmp --with-mhash --enable-json --enable-mbstring --disable-mbregex --disable-mbregex-backtrack --with-libmbfl --with-onig --enable-pdo --with-pdo-mysql --with-zlib-dir --with-pdo-sqlite --with-readline --enable-session --enable-shmop --enable-simplexml --enable-sockets --enable-sysvmsg --enable-sysvsem --enable-sysvshm --enable-wddx --with-libxml-dir  --with-xsl --enable-zip --enable-mysqlnd-compression-support --with-pear
+
+echo "正在执行make……"
+make > /dev/null 2>&1
+if [ "$?" -ge "1" ]
+then
+	echo "正在执行make clean,之后make install"
+	make clean > /dev/null 2>&1
+	make install > /dev/null 2>&1
+else
+	make install > /dev/null 2>&1
+fi
+echo "正在复制配置文件……"
+cp $PHP/etc/php-fpm.conf.default $PHP/etc/php-fpm.conf ||exit
+cp $PHP/sbin/php-fpm /usr/local/bin/php-fpm ||exit
+cp $src/php*/php.ini-production $PHP/lib/php.ini ||exit
+cp $src/php-fpm /etc/init.d/php-fpm ||exit
+chmod a+x /etc/init.d/php-fpm
+chkconfig --add php-fpm ||exit
+chkconfig php-fpm on ||exit
+echo "正在启动PHP……"
+service php-fpm start
+echo "PHP安装完成！"
+
+#Mysql
+
+
+echo "开始配置Mariadb环境……"
+yum -y install cmake ncurses-devel > /dev/null 2>&1 ||exit
+if [ id -u mysql > /dev/null 2>&1 ]
+then
+        echo "用户已存在……"
+else
+        echo "正在添加用户和组……"
+        groupadd -r mysql ||exit
+        mkdir -p /opt/mydata ||exit
+        useradd -g mysql -s /sbin/nologin mysql ||exit
+fi
+cd $src/
+tar xf mariadb*.tar.gz
+cd mariadb*
+echo "开始编译……"
+cmake . -DCMAKE_INSTALL_PREFIX=/usr/local/mysql -DMYSQL_DATADIR=/opt/mydata/ -DSYSCONFDIR=/etc -DWITH_INNOBASE_STORAGE_ENGINE=1 -DWITH_ARCHIVE_STPRAGE_ENGINE=1 -DWITH_BLACKHOLE_STORAGE_ENGINE=1 -DWIYH_READLINE=1 -DWIYH_SSL=system -DVITH_ZLIB=system -DWITH_LOBWRAP=0 -DMYSQL_UNIX_ADDR=/tmp/mysql.sock -DDEFAULT_CHARSET=utf8 -DDEFAULT_COLLATION=utf8_general_ci ||exit
+if [ $? ]
+then
+        echo "开始安装……"
+        make && make install > /dev/null 2>&1 ||exit
+else
+        echo "编译失败。" ||exit
+fi
+echo "开始配置mariadb……"
+chown -R mysql:mysql /opt/mydata/
+cd /usr/local/mysql/
+./scripts/mysql_install_db --user=mysql --datadir=/opt/mydata/ > /dev/null 2>&1 ||exit
+cp support-files/my-large.cnf /etc/my.cnf ||exit
+cp support-files/mysql.server /etc/init.d/mysqld ||exit
+chmod a+x /etc/init.d/mysqld
+chkconfig --add mysqld ||exit
+chkconfig mysqld on
+echo "正在启动mariadb服务"
+service mysqld start
+cp bin/mysql /usr/local/bin/mysql ||exit
+echo "Mariadb安装完成!"
