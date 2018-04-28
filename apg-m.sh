@@ -18,8 +18,8 @@ fi
 tail -f /sh/logs/${name}${date}.log &
 exec &>>/sh/logs/${name}${date}.log
 SVN_URL=https://192.168.1.11:443/svn/src/gold
-SVN_PSWD=123456
-SVN_USER=test1
+SVN_PSWD=88888
+SVN_USER=nothing
 SVN_LOCAL_URL=/tmp/${name}
 rm -rf /tmp/${name}
 svn --username $SVN_USER --password $SVN_PSWD checkout $SVN_URL $SVN_LOCAL_URL
