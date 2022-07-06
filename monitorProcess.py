@@ -12,12 +12,12 @@ titels = []
 
 def mails(text):
 	# 设置SMTP信息
-	mail_host = "email.jinyu66.com"
-	mail_user = "xuhongbin@jinyu66.com"
-	mail_passwd = "*IK<8ik,"
+	mail_host = "email.test.com"
+	mail_user = "xuhongbin@test.com"
+	mail_passwd = "changeit"
 	# 发送和接收地址
-	sender = 'xuhongbin@jinyu66.com'
-	receivers = ['xuhongbin@jinyu66.com']
+	sender = 'xuhongbin@test.com'
+	receivers = ['xuhongbin@test.com']
 
 	message = MIMEText(text,'plain','utf-8')
 	message['From'] = Header(text,'utf-8')
