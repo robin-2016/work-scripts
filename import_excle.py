@@ -8,7 +8,7 @@ import MySQLdb
 book = xlrd.open_workbook("/root/ITCMDB.xlsx")
 sheet = book.sheet_by_index(0)
 #建立数据库连接
-database = MySQLdb.connect(host = "10.0.2.10",user = "root",passwd = "&UJM7ujm",db = "CMDB")
+database = MySQLdb.connect(host = "10.0.2.10",user = "root",passwd = "changeit",db = "CMDB")
 database.set_character_set('utf8')
 #获得游标对象，用于逐行遍历数据库数据
 cursor = database.cursor()
